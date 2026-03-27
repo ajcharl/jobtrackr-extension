@@ -1,0 +1,28 @@
+# Backend
+backend/.env
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+node_modules/
+app/build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Env files
+.env
+.env.local
+.env.production
+
+# Docker data
+postgres_data/
+
+# Claude Code
+.claude/

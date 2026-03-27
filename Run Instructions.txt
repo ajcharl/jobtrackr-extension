@@ -1,0 +1,3 @@
+docker compose up -d
+uvicorn app.main:app --reload ( run inside the backend folder )
+npm run build ( run inside the app folder )
