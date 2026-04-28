@@ -1,4 +1,5 @@
-const API_BASE = "http://localhost:8000";
+importScripts("config.js");
+const API_BASE = self.API_BASE;
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "JOB_SUBMITTED") {
