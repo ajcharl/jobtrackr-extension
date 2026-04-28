@@ -951,7 +951,7 @@ function AppInner() {
                         </Tooltip>
                       </>
                     ) : (
-                      <Button size="small" variant="contained" href="http://localhost:8000/gmail/connect"
+                      <Button size="small" variant="contained" href={`${process.env.REACT_APP_API_URL || "http://localhost:8000"}/gmail/connect`}
                         sx={{ fontSize: "0.8125rem", fontWeight: 600, background: isLight ? "linear-gradient(135deg, #111113, #2a2a2e)" : "linear-gradient(135deg, #e8e8ea, #d0d0d4)", color: isLight ? "#fff" : "#111113" }}>
                         Connect Gmail
                       </Button>
@@ -996,7 +996,7 @@ function AppInner() {
                         </Tooltip>
                       </>
                     ) : (
-                      <Button size="small" variant="contained" href="http://localhost:8000/yahoo/connect"
+                      <Button size="small" variant="contained" href={`${process.env.REACT_APP_API_URL || "http://localhost:8000"}/yahoo/connect`}
                         sx={{ fontSize: "0.8125rem", fontWeight: 600, background: isLight ? "linear-gradient(135deg, #6410b2, #7c3aed)" : "linear-gradient(135deg, #a78bfa, #c4b5fd)", color: isLight ? "#fff" : "#111113" }}>
                         Connect Yahoo
                       </Button>

@@ -24,7 +24,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         appliedAt: new Date().toISOString(),
       };
       try {
-        const res = await fetch("http://localhost:8000/jobs", {
+        const res = await fetch(`${self.API_BASE}/jobs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
