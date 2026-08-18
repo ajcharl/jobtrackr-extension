@@ -1,0 +1,182 @@
+===========================================================
+  What Changed: FastAPI (Python) → Express (Node.js)
+===========================================================
+
+This file explains the structural differences between the
+old Python/FastAPI backend and the new Node.js/Express backend,
+so you understand WHY things look different, not just WHAT changed.
+
+
+1. ROUTING
+----------
+FastAPI:  Uses APIRouter objects. You create a router with a prefix
+          (like "/jobs"), define routes with decorators like
+          @router.get("/") and @router.post(""), then include that
+          router in the main app with app.include_router(router).
+
+Express:  Uses express.Router() objects. You define routes with
+          router.get("/"), router.post("/"), etc., then mount the
+          router in the main app with app.use("/jobs", jobsRouter).
+
+Key difference: In FastAPI, the prefix is on the router itself.
+In Express, the prefix is set when you mount the router in server.js.
+The route handlers themselves just use relative paths like "/" or "/:id".
+
+
+2. MIDDLEWARE
+-------------
+FastAPI:  Middleware is added with app.add_middleware(). CORS is a
+          built-in middleware class (CORSMiddleware) that you configure
+          with a dict of options.
+
+Express:  Middleware is added with app.use(). CORS comes from the
+          separate "cors" npm package. You configure it with an
+          options object. The big difference is that Express middleware
+          runs in order — if you put app.use(cors()) before your routes,
+          all routes get CORS headers. Order matters in Express.
+
+
+3. REQUEST/RESPONSE HANDLING
+-----------------------------
+FastAPI:  Request data is automatically parsed and validated using
+          Pydantic models. You declare a parameter like
+          "payload: JobCreate" and FastAPI validates the JSON body
+          against that schema automatically. If validation fails,
+          it returns a 422 error.
+
+Express:  There is no automatic validation. The JSON body is parsed
+          by express.json() middleware into req.body as a plain object.
+          You read fields directly from req.body (like req.body.title).
+          If a required field is missing, you have to check for it
+          yourself.
+
+FastAPI:  Response serialization is handled by Pydantic models too.
+          The response_model parameter converts snake_case database
+          fields to camelCase JSON automatically using field aliases.
+
+Express:  We wrote a helper function (formatJobResponse) that manually
+          converts snake_case database column names to the camelCase
+          keys the frontend expects. This does the same job as Pydantic's
+          serialization_alias, just by hand.
+
+
+4. DATABASE CONNECTION
+-----------------------
+FastAPI:  Uses SQLAlchemy with async support (asyncpg driver).
+          The database session is injected into route handlers using
+          FastAPI's "Depends" system: db: AsyncSession = Depends(get_db).
+          SQLAlchemy provides an ORM — you define Python classes (models)
+          that map to database tables, and you query using Python objects
+          instead of SQL strings.
+
+Express:  Uses the "pg" library (node-postgres) directly. There is
+          no ORM — we write raw SQL queries with parameterized values
+          (like $1, $2) to prevent SQL injection. Instead of a dependency
+          injection system, each route handler calls getPool() to get
+          the database connection pool and runs queries on it.
+
+The biggest mental shift: In SQLAlchemy, you work with Python objects
+(job.title = "new title", then db.commit()). In pg, you write UPDATE
+statements and get back row objects with the column values.
+
+
+5. ERROR HANDLING
+------------------
+FastAPI:  You raise HTTPException(status_code=404, detail="Not found")
+          and FastAPI catches it, formats it as JSON, and sends it.
+
+Express:  You call res.status(404).json({ detail: "Not found" }) directly.
+          For unexpected errors, you call next(err) to pass the error
+          to the error-handling middleware at the bottom of server.js.
+
+
+6. STARTUP / LIFECYCLE
+-----------------------
+FastAPI:  Has a "lifespan" concept — an async context manager that runs
+          code on startup (before accepting requests) and shutdown.
+          The Python version used this to create database tables and
+          run migrations.
+
+Express:  We wrote an async startServer() function that runs
+          initializeDatabase() before calling app.listen(). Same idea,
+          just a different pattern. Node doesn't have a built-in
+          lifecycle hook, so we just put the startup logic before the
+          listen call.
+
+
+7. ASYNC/AWAIT
+--------------
+FastAPI:  All route handlers are async functions. SQLAlchemy queries
+          use await. The httpx library (for Gmail/Yahoo API calls)
+          is also async.
+
+Express:  Route handlers are also async functions with await.
+          Database queries (pg) return Promises, so await works.
+          The built-in fetch() (available in Node 18+) replaces httpx.
+          For Yahoo IMAP, we wrap the callback-based "imap" library
+          in a Promise so we can await it.
+
+
+8. FILE STRUCTURE COMPARISON
+-----------------------------
+Python (FastAPI)                    Node.js (Express)
+─────────────────────              ──────────────────────
+backend/                           backend-node/
+  requirements.txt                   package.json
+  app/                               src/
+    main.py                            server.js
+    config.py                          config.js
+    database.py                        database.js
+    models.py                          (no separate models file — raw SQL)
+    schemas.py                         helpers.js (format functions)
+    routers/                           routes/
+      jobs.py                            jobs.js
+      gmail.py                           gmail.js
+      yahoo.py                           yahoo.js
+      email_sync.py                      emailSync.js
+    services/                          services/
+      gmail_service.py                   gmailService.js
+      yahoo_service.py                   yahooService.js
+      email_pipeline.py                  emailPipeline.js
+      email_classifier.py               (merged into emailPipeline.js)
+      email_matcher.py                   (merged into emailPipeline.js)
+
+
+9. WHAT WE DROPPED
+--------------------
+- models.py: No equivalent needed. The database.js file creates the
+  tables with raw SQL (CREATE TABLE IF NOT EXISTS). There's no ORM
+  mapping Python classes to tables.
+
+- schemas.py: No equivalent needed. Express doesn't do automatic
+  request validation. The helpers.js file handles response formatting.
+
+- email_classifier.py and email_matcher.py: These were earlier versions
+  of logic that was duplicated (and improved) in email_pipeline.py.
+  The Python code imported only email_pipeline.py. We kept just the
+  pipeline file in the Node version.
+
+- requirements.txt: Replaced by package.json, which serves the same
+  purpose (listing dependencies) but for npm instead of pip.
+
+- alembic: The Python version listed Alembic (a database migration tool)
+  as a dependency but never actually used it — migrations were done
+  with raw ALTER TABLE statements. The Node version does the same
+  raw ALTER TABLE approach, so no migration tool is needed.
+
+
+10. HOW TO RUN
+--------------
+Old (Python):
+  cd backend
+  pip install -r requirements.txt
+  uvicorn app.main:app --reload
+
+New (Node.js):
+  cd backend-node
+  npm install
+  npm run dev        (uses --watch for auto-restart on changes)
+  npm start          (for production, no auto-restart)
+
+Both versions expect a .env file with the same environment variables.
+Copy .env.example to .env and fill in your values.
