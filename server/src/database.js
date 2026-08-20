@@ -12,9 +12,7 @@ function getPool() {
     // Parse the DATABASE_URL to configure the pool
     pool = new pg.Pool({
       connectionString: config.databaseUrl,
-      ssl: config.databaseUrl.includes("sslmode=require")
-        ? { rejectUnauthorized: false }
-        : false,
+      ssl: { rejectUnauthorized: false },
     });
   }
   return pool;
