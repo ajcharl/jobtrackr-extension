@@ -19,11 +19,11 @@
 ## Architecture
 
 ```
-┌──────────────────┐       ┌──────────────────────┐       ┌──────────────┐
-│  Chrome ext.     │──────▶│  FastAPI on Render   │──────▶│  Postgres    │
-│  (content +      │       │  jobs / gmail / yahoo│       │  (Render)    │
-│   background +   │       │  /email-sync         │       │              │
-│   bundled React  │       └──────────────────────┘       └──────────────┘
+┌──────────────────┐       ┌──────────────────────┐                   ┌──────────────┐
+│  Chrome ext.     │──────▶│  NodeJS/Express on Render       │──────▶│  Postgres    │
+│  (content +      │       │  jobs /gmail/yahoo   │                   │  (Render)    │
+│   background +   │       │  /email-sync         │                   │              │
+│   bundled React  │       └──────────────────────┘                   └──────────────┘
 │   dashboard)     │
 └──────────────────┘
 ```
